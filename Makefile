@@ -742,6 +742,9 @@ wasmtest:
 	$(GO) test ./tests/wasm
 
 build/release: tinygo gen-device wasi-libc $(if $(filter 1,$(USE_SYSTEM_BINARYEN)),,binaryen)
+	@pushd lib/musl
+	@patch -i ../../patch/musl-fix-warning.patch
+	@popd
 	@mkdir -p build/release/tinygo/bin
 	@mkdir -p build/release/tinygo/lib/clang/include
 	@mkdir -p build/release/tinygo/lib/CMSIS/CMSIS

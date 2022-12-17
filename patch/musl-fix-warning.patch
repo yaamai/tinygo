@@ -1,0 +1,18 @@
+diff --git a/src/locale/dcngettext.c b/src/locale/dcngettext.c
+index 4c304393..50d47aeb 100644
+--- a/src/locale/dcngettext.c
++++ b/src/locale/dcngettext.c
+@@ -175,10 +175,11 @@ notrans:
+ 		const void *map;
+ 
+ 		for (;;) {
+-			snprintf(name, sizeof name, "%s/%.*s%.*s/%s/%s.mo\0",
++			int l = snprintf(name, sizeof name, "%s/%.*s%.*s/%s/%s.mo",
+ 				dirname, (int)loclen, locname,
+ 				(int)alt_modlen, modname, catname, domainname);
+-			if (map = __map_file(name, &map_size)) break;
++			name[l]  = '\0';
++			if ((map = __map_file(name, &map_size))) break;
+ 
+ 			/* Try dropping @mod, _YY, then both. */
+ 			if (alt_modlen) {
