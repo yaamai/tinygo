@@ -3,6 +3,7 @@ package builder
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -11,6 +12,31 @@ import (
 	"github.com/tinygo-org/tinygo/compileopts"
 	"github.com/tinygo-org/tinygo/goenv"
 )
+
+func CopyFile(src, dst string) (int64, error) {
+	sourceFileStat, err := os.Stat(src)
+	if err != nil {
+		return 0, err
+	}
+
+	if !sourceFileStat.Mode().IsRegular() {
+		return 0, fmt.Errorf("%s is not a regular file", src)
+	}
+
+	source, err := os.Open(src)
+	if err != nil {
+		return 0, err
+	}
+	defer source.Close()
+
+	destination, err := os.Create(dst)
+	if err != nil {
+		return 0, err
+	}
+	defer destination.Close()
+	nBytes, err := io.Copy(destination, source)
+	return nBytes, err
+}
 
 var Musl = Library{
 	name: "musl",
@@ -23,6 +49,38 @@ var Musl = Library{
 
 		arch := compileopts.MuslArchitecture(target)
 		muslDir := filepath.Join(goenv.Get("TINYGOROOT"), "lib", "musl")
+
+		// copy generic bits headers
+		genericFiles := []string{
+			"dirent.h",
+			"errno.h",
+			"fcntl.h",
+			"fenv.h",
+			"hwcap.h",
+			"ioctl_fix.h",
+			"ioctl.h",
+			"io.h",
+			"ipc.h",
+			"ipcstat.h",
+			"kd.h",
+			"limits.h",
+			"link.h",
+			"mman.h",
+			"msg.h",
+			"poll.h",
+			"ptrace.h",
+			"resource.h",
+			"sem.h",
+			"shm.h",
+			"socket.h",
+			"soundcard.h",
+			"statfs.h",
+			"termios.h",
+			"vt.h",
+		}
+		for _, name := range genericFiles {
+			CopyFile(filepath.Join(muslDir, "arch", "generic", "bits", name), filepath.Join(bits, name))
+		}
 
 		// Create the file alltypes.h.
 		f, err := os.Create(filepath.Join(bits, "alltypes.h"))
@@ -127,6 +185,12 @@ var Musl = Library{
 			"thread/*.c",
 			"time/*.c",
 			"unistd/*.c",
+			"multibyte/*.c",
+			"locale/*.c",
+			"linux/*.c",
+			"misc/*.c",
+			"sched/*.c",
+			"network/*.c",
 		}
 
 		var sources []string
